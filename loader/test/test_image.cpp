@@ -33,6 +33,7 @@
 #include "image.hpp"
 #include "log.hpp"
 #include "util.hpp"
+#include "bstream.hpp"
 
 using namespace std;
 using namespace nervana;
@@ -1183,4 +1184,96 @@ TEST(photometric, saturation)
         image::photometric::cbsjitter(mat, 1.0, 1.0, 0.1);
         EXPECT_TRUE(test_saturation(mat, {128, 115, 115}, {115, 128, 115}, {115, 115, 128}));
     }
+}
+
+TEST(tiff,uint8_t)
+{
+    const vector<uint8_t> buffer = { 0x01,0x02 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readU8();
+    auto v2 = bs.readU8();
+    EXPECT_EQ(1, v1);
+    EXPECT_EQ(2, v2);
+}
+
+TEST(tiff,uint16_t)
+{
+    const vector<uint8_t> buffer = { 0x00, 0x01, 0x00, 0x02 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readU16();
+    auto v2 = bs.readU16();
+    EXPECT_EQ(256, v1);
+    EXPECT_EQ(512, v2);
+}
+
+TEST(tiff,uint32_t)
+{
+    const vector<uint8_t> buffer = { 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readU32();
+    auto v2 = bs.readU32();
+    EXPECT_EQ(1<<24, v1);
+    EXPECT_EQ(2<<24, v2);
+}
+
+TEST(tiff,uint64_t)
+{
+    const vector<uint8_t> buffer = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readU64();
+    auto v2 = bs.readU64();
+    EXPECT_EQ((uint64_t)1, v1);
+    EXPECT_EQ((uint64_t)2, v2);
+}
+
+TEST(tiff,int8_t)
+{
+    const vector<uint8_t> buffer = { 0x01,0x02 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readS8();
+    auto v2 = bs.readS8();
+    EXPECT_EQ(1, v1);
+    EXPECT_EQ(2, v2);
+}
+
+TEST(tiff,int16_t)
+{
+    const vector<uint8_t> buffer = { 0x01, 0x00, 0x02, 0x00 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readS16();
+    auto v2 = bs.readS16();
+    EXPECT_EQ(1, v1);
+    EXPECT_EQ(2, v2);
+}
+
+TEST(tiff,int32_t)
+{
+    const vector<uint8_t> buffer = { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readS32();
+    auto v2 = bs.readS32();
+    EXPECT_EQ(1, v1);
+    EXPECT_EQ(2, v2);
+}
+
+TEST(tiff,int64_t)
+{
+    const vector<uint8_t> buffer = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    bstream_mem bs{buffer};
+
+    auto v1 = bs.readS64();
+    auto v2 = bs.readS64();
+    EXPECT_EQ((int64_t)1, v1);
+    EXPECT_EQ((int64_t)2, v2);
+}
+
+TEST(tiff,test)
+{
 }

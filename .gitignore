@@ -48,6 +48,7 @@ output/
 *.mpg
 *.cpio
 *.wav
+config_args.txt
 
 # vim
 *.swp

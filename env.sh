@@ -11,6 +11,7 @@ SRCS="
     block_loader_file.cpp
     block_loader_nds.cpp
     box.cpp
+    bstream.cpp
     buffer_in.cpp
     buffer_out.cpp
     buffer_pool.cpp
@@ -51,6 +52,7 @@ SRCS="
     specgram.cpp
     util.cpp
     wav_data.cpp
+    tiff.cpp
 "
 # remove newlines
 export SRCS="$(echo ${SRCS} | sed 's/\n//g')"
