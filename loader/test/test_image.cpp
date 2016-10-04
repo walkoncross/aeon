@@ -34,6 +34,7 @@
 #include "log.hpp"
 #include "util.hpp"
 #include "bstream.hpp"
+#include "tiff.hpp"
 
 using namespace std;
 using namespace nervana;
@@ -1243,13 +1244,13 @@ TEST(tiff,int8_t)
 
 TEST(tiff,int16_t)
 {
-    const vector<uint8_t> buffer = { 0x01, 0x00, 0x02, 0x00 };
+    const vector<uint8_t> buffer = { 0xFF, 0xFF, 0xFE, 0xFF };
     bstream_mem bs{buffer};
 
     auto v1 = bs.readS16();
     auto v2 = bs.readS16();
-    EXPECT_EQ(1, v1);
-    EXPECT_EQ(2, v2);
+    EXPECT_EQ(-1, v1);
+    EXPECT_EQ(-2, v2);
 }
 
 TEST(tiff,int32_t)
@@ -1276,4 +1277,12 @@ TEST(tiff,int64_t)
 
 TEST(tiff,test)
 {
+    string data_base = "/mnt/c/Users/rkimball/dev/tiff/data/";
+    string f1 = data_base + "3band/3band_013022232200_Public_img6993.tif";
+    cout << f1 << endl;
+    auto f1_data = read_file_contents(f1);
+    cout << "file size " << f1_data.size() << endl;
+
+    bstream_mem bs{f1_data};
+    cout << hex << bs.readU16() << endl;
 }

@@ -13,3 +13,61 @@
  limitations under the License.
 */
 
+#include <stdexcept>
+
+#include "tiff.hpp"
+
+using namespace std;
+using namespace nervana;
+using namespace nervana::tiff;
+
+bool nervana::tiff::is_tiff(const char* data, size_t size)
+{
+    bool rc = true;
+    bstream_mem bs{data, size};
+
+    auto byte_order = bs.readU16();
+    if(byte_order == 0x4949)
+    {
+        bs.set_endian(bstream_base::endian_t::LITTLE);
+    }
+    else if(byte_order == 0x4D4D)
+    {
+        bs.set_endian(bstream_base::endian_t::BIG);
+    }
+    else
+    {
+        rc = false;
+    }
+    auto file_id = bs.readU16();
+    rc &= file_id == 42;
+    return rc;
+}
+
+file_header::file_header(bstream_base& bs)
+{
+    byte_order = bs.readU16();
+    if(byte_order == 0x4949)
+    {
+        bs.set_endian(bstream_base::endian_t::LITTLE);
+    }
+    else if(byte_order == 0x4D4D)
+    {
+        bs.set_endian(bstream_base::endian_t::BIG);
+    }
+    else
+    {
+        throw runtime_error("file not tiff" );
+    }
+    file_id    = bs.readU16();
+    ifd_offset = bs.readU32();
+}
+
+directory_entry::directory_entry(bstream_base& bs)
+{
+
+    uint16_t    tag;
+    uint16_t    type;
+    uint32_t    count;
+    uint32_t    value_offset;
+}

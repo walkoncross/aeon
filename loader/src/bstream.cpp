@@ -21,19 +21,38 @@
 using namespace std;
 using namespace nervana;
 
+bstream_base::bstream_base() :
+    endian{endian_t::LITTLE}
+{
+}
+
+bstream_base::~bstream_base()
+{
+}
+
+void bstream_base::set_endian(bstream_base::endian_t value)
+{
+    endian = value;
+}
+
 bstream_mem::bstream_mem(const char* _data, size_t size) :
     data{_data},
     data_size{size},
-    offset{0},
-    big_endian{false}
+    offset{0}
 {
 }
 
 bstream_mem::bstream_mem(const std::vector<uint8_t>& _data) :
     data{(const char*)_data.data()},
     data_size{_data.size()},
-    offset{0},
-    big_endian{false}
+    offset{0}
+{
+}
+
+bstream_mem::bstream_mem(const std::vector<char>& _data) :
+    data{(const char*)_data.data()},
+    data_size{_data.size()},
+    offset{0}
 {
 }
 
@@ -49,15 +68,13 @@ uint8_t  bstream_mem::readU8()
 uint16_t bstream_mem::readU16()
 {
     uint16_t rc;
-    if(big_endian)
+    if(endian == endian_t::BIG)
     {
-        // big endian
         rc = (get_next_byte() << 8);
         rc |= get_next_byte();
     }
     else
     {
-        // little endian
         rc = get_next_byte();
         rc |= (get_next_byte() << 8);
     }
@@ -67,9 +84,8 @@ uint16_t bstream_mem::readU16()
 uint32_t bstream_mem::readU32()
 {
     uint32_t rc;
-    if(big_endian)
+    if(endian == endian_t::BIG)
     {
-        // big endian
         rc = (get_next_byte() << 24);
         rc = (get_next_byte() << 16);
         rc = (get_next_byte() <<  8);
@@ -77,7 +93,6 @@ uint32_t bstream_mem::readU32()
     }
     else
     {
-        // little endian
         rc = get_next_byte();
         rc |= (get_next_byte() <<  8);
         rc |= (get_next_byte() << 16);
@@ -89,9 +104,8 @@ uint32_t bstream_mem::readU32()
 uint64_t bstream_mem::readU64()
 {
     uint64_t rc;
-    if(big_endian)
+    if(endian == endian_t::BIG)
     {
-        // big endian
         rc = ((uint64_t)get_next_byte() << 56);
         rc = ((uint64_t)get_next_byte() << 48);
         rc = ((uint64_t)get_next_byte() << 40);
@@ -103,7 +117,6 @@ uint64_t bstream_mem::readU64()
     }
     else
     {
-        // little endian
         rc =   (uint64_t)get_next_byte();
         rc |= ((uint64_t)get_next_byte() <<  8);
         rc |= ((uint64_t)get_next_byte() << 16);

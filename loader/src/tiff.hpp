@@ -15,3 +15,52 @@
 
 #pragma once
 
+#include "bstream.hpp"
+
+namespace nervana
+{
+    namespace tiff
+    {
+        class file_header;
+        class directory_entry;
+
+        enum class data_type
+        {
+            BYTE = 1,
+            ASCII = 2,
+            SHORT = 3,
+            LONG = 4,
+            RATIONAL = 5,
+            SBYTE = 6,
+            UNDEFINED = 7,
+            SSHORT = 8,
+            SLONG = 9,
+            SRATIONAL = 10,
+            FLOAT = 11,
+            DOUBLE = 12
+        };
+
+        bool is_tiff(const char* data, size_t size);
+    }
+}
+
+class nervana::tiff::file_header
+{
+public:
+    file_header(bstream_base& bs);
+
+    uint16_t    byte_order;
+    uint16_t    file_id;
+    uint32_t    ifd_offset;
+};
+
+class nervana::tiff::directory_entry
+{
+public:
+    directory_entry(bstream_base& bs);
+
+    uint16_t    tag;
+    uint16_t    type;
+    uint32_t    count;
+    uint32_t    value_offset;
+};

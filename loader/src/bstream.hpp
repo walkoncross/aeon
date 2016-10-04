@@ -28,6 +28,14 @@ namespace nervana
 class nervana::bstream_base
 {
 public:
+    enum class endian_t
+    {
+        BIG,
+        LITTLE
+    };
+    bstream_base();
+    virtual ~bstream_base();
+    void set_endian(endian_t);
     virtual uint8_t  readU8()  = 0;
     virtual uint16_t readU16() = 0;
     virtual uint32_t readU32() = 0;
@@ -38,6 +46,8 @@ public:
     virtual int64_t  readS64() = 0;
     virtual float    readF32() = 0;
     virtual double   readF64() = 0;
+protected:
+    endian_t endian = endian_t::LITTLE;
 };
 
 class nervana::bstream_mem : public bstream_base
@@ -45,6 +55,7 @@ class nervana::bstream_mem : public bstream_base
 public:
     bstream_mem(const char* data, size_t size);
     bstream_mem(const std::vector<uint8_t>& data);
+    bstream_mem(const std::vector<char>& data);
     ~bstream_mem();
 
     uint8_t  readU8()  override;
@@ -66,5 +77,4 @@ private:
     const char* data;
     size_t      data_size;
     size_t      offset;
-    bool        big_endian;
 };
