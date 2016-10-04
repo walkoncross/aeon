@@ -14,8 +14,10 @@
 */
 
 #include <stdexcept>
+#include <iostream>
 
 #include "tiff.hpp"
+#include "util.hpp"
 
 using namespace std;
 using namespace nervana;
@@ -65,9 +67,19 @@ file_header::file_header(bstream_base& bs)
 
 directory_entry::directory_entry(bstream_base& bs)
 {
-
     uint16_t    tag;
     uint16_t    type;
     uint32_t    count;
     uint32_t    value_offset;
+}
+
+reader::reader(const char* data, size_t size) :
+    bstream{data, size},
+    header{bstream}
+{
+    dump(cout, data, 128);
+    cout << __FILE__ << " " << __LINE__ << " " << hex << header.byte_order << dec << endl;
+    cout << __FILE__ << " " << __LINE__ << " " << header.file_id    << endl;
+    cout << __FILE__ << " " << __LINE__ << " " << header.ifd_offset << endl;
+    bstream.seek(header.ifd_offset);
 }

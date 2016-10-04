@@ -159,6 +159,11 @@ double   bstream_mem::readF64()
     return (double)readU64();
 }
 
+void     bstream_mem::seek(size_t _offset)
+{
+    offset = _offset;
+}
+
 uint8_t bstream_mem::get_next_byte()
 {
     if(offset >= data_size)

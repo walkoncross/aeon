@@ -23,6 +23,7 @@ namespace nervana
     {
         class file_header;
         class directory_entry;
+        class reader;
 
         enum class data_type
         {
@@ -63,4 +64,16 @@ public:
     uint16_t    type;
     uint32_t    count;
     uint32_t    value_offset;
+};
+
+class nervana::tiff::reader
+{
+public:
+    reader(const char* data, size_t size);
+    bool is_tiff();
+
+private:
+    bstream_mem     bstream;
+
+    file_header     header;
 };

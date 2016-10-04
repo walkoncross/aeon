@@ -36,6 +36,7 @@ public:
     bstream_base();
     virtual ~bstream_base();
     void set_endian(endian_t);
+
     virtual uint8_t  readU8()  = 0;
     virtual uint16_t readU16() = 0;
     virtual uint32_t readU32() = 0;
@@ -46,6 +47,8 @@ public:
     virtual int64_t  readS64() = 0;
     virtual float    readF32() = 0;
     virtual double   readF64() = 0;
+
+    virtual void     seek(size_t offset) = 0;
 protected:
     endian_t endian = endian_t::LITTLE;
 };
@@ -68,6 +71,8 @@ public:
     int64_t  readS64() override;
     float    readF32() override;
     double   readF64() override;
+
+    void     seek(size_t offset) override;
 
 private:
     bstream_mem() = delete;

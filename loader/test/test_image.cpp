@@ -1283,6 +1283,5 @@ TEST(tiff,test)
     auto f1_data = read_file_contents(f1);
     cout << "file size " << f1_data.size() << endl;
 
-    bstream_mem bs{f1_data};
-    cout << hex << bs.readU16() << endl;
+    tiff::reader reader{f1_data.data(), f1_data.size()};
 }
