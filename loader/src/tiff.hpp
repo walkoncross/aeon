@@ -163,12 +163,15 @@ class nervana::tiff::directory_entry
 {
 public:
     directory_entry(bstream_base& bs);
-    size_t read_value(tiff::data_type type, bstream_base& bs);
+    size_t read(bstream_base& bs);
 
     tag_type    tag;
     data_type   type;
     uint32_t    count;
     uint32_t    value_offset;
+
+private:
+    size_t read_value(tiff::data_type type, bstream_base& bs);
 };
 
 class nervana::tiff::reader

@@ -79,6 +79,10 @@ size_t directory_entry::read_value(data_type type, bstream_base& bs)
 
 directory_entry::directory_entry(bstream_base& bs)
 {
+}
+
+size_t directory_entry::read(bstream_base& bs)
+{
     uint16_t directory_count = bs.readU16();
     cout << __FILE__ << " " << __LINE__ << " " << directory_count          << endl;
 
@@ -92,7 +96,8 @@ directory_entry::directory_entry(bstream_base& bs)
     size_t strip_bytes_count_offset;
     int planar_configuration = 0;
     int channels = 0;
-    int bits_per_sample = 0;
+    size_t bits_per_sample_offset = 0;
+    vector<int> bits_per_sample;
 
     for(int i=0; i<directory_count; i++)
     {
@@ -111,9 +116,11 @@ directory_entry::directory_entry(bstream_base& bs)
             break;
         case tag_type::Compression:
             compression = (compression_t)read_value(type, bs);
+            cout << "compression " << compression << endl;
             break;
         case tag_type::PhotometricInterpretation:
             photometric = (photometric_t)read_value(type, bs);
+            cout << "photometric " << photometric << endl;
             break;
         case tag_type::StripOffsets:
             strip_offsets_count = count;
@@ -149,8 +156,8 @@ directory_entry::directory_entry(bstream_base& bs)
             cout << __FILE__ << " " << __LINE__ << " " << planar_configuration << endl;
             break;
         case tag_type::BitsPerSample:
-            bits_per_sample = read_value(type, bs);
-            cout << "bits per sample " << bits_per_sample << endl;
+            bits_per_sample_offset = read_value(type, bs);
+            cout << "bits per sample offset " << hex << bits_per_sample_offset << dec << endl;
             break;
         case tag_type::SampleFormat:
             cout << __FILE__ << " " << __LINE__ << " " << count << endl;
@@ -168,23 +175,39 @@ directory_entry::directory_entry(bstream_base& bs)
 //        cout << endl;
     }
     uint32_t next_offset = bs.readU32();
+
+    bs.seek(bits_per_sample_offset);
+    for(int i=0; i<channels; i++)
+    {
+        bits_per_sample.push_back(bs.readU16());
+        cout << "sample " << i << " depth " << bits_per_sample.back() << endl;
+    }
+
     cout << "next offset " << next_offset << endl;
     cout << "image_width    " << image_width << endl;
     cout << "image_length   " << image_length << endl;
     cout << "compression    " << compression << endl;
     cout << "photometric    " << photometric << endl;
+
+    return next_offset;
 }
 
 reader::reader(const char* data, size_t size) :
     bstream{data, size},
     header{bstream}
 {
-    dump(cout, data, 128);
+    dump(cout, data, 256);
     cout << __FILE__ << " " << __LINE__ << " " << hex << header.byte_order << dec << endl;
     cout << __FILE__ << " " << __LINE__ << " " << header.file_id    << endl;
     cout << __FILE__ << " " << __LINE__ << " " << header.ifd_offset << endl;
     bstream.seek(header.ifd_offset);
     directory_entry entry{bstream};
+    size_t next;
+    do
+    {
+      next = entry.read(bstream);
+      bstream.seek(next);
+    } while(next != 0);
 }
 
 ostream& nervana::tiff::operator<<(ostream& out, tag_type tag)
