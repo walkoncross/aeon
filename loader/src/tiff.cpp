@@ -77,27 +77,20 @@ size_t directory_entry::read_value(data_type type, bstream_base& bs)
     return rc;
 }
 
-directory_entry::directory_entry(bstream_base& bs)
+directory_entry::directory_entry()
 {
 }
 
-size_t directory_entry::read(bstream_base& bs)
+directory_entry directory_entry::read(bstream_base& bs)
 {
+    directory_entry rc;
     uint16_t directory_count = bs.readU16();
     cout << __FILE__ << " " << __LINE__ << " " << directory_count          << endl;
 
-    size_t image_width;
-    size_t image_length;
-    compression_t compression;
-    photometric_t photometric;
-    size_t strip_offsets_count = 0;
-    size_t strip_offsets_offset;
-    size_t strip_bytes_count_count = 0;
-    size_t strip_bytes_count_offset;
-    int planar_configuration = 0;
-    int channels = 0;
-    size_t bits_per_sample_offset = 0;
-    vector<int> bits_per_sample;
+    tag_type    tag;
+    data_type   type;
+    uint32_t    count;
+    uint32_t    value_offset;
 
     for(int i=0; i<directory_count; i++)
     {
@@ -109,34 +102,34 @@ size_t directory_entry::read(bstream_base& bs)
         switch(tag)
         {
         case tag_type::ImageWidth:
-            image_width = read_value(type, bs);
+            rc.image_width = read_value(type, bs);
             break;
         case tag_type::ImageLength:
-            image_length = read_value(type, bs);
+            rc.image_length = read_value(type, bs);
             break;
         case tag_type::Compression:
-            compression = (compression_t)read_value(type, bs);
-            cout << "compression " << compression << endl;
+            rc.compression = (compression_t)read_value(type, bs);
+            cout << "compression " << rc.compression << endl;
             break;
         case tag_type::PhotometricInterpretation:
-            photometric = (photometric_t)read_value(type, bs);
-            cout << "photometric " << photometric << endl;
+            rc.photometric = (photometric_t)read_value(type, bs);
+            cout << "photometric " << rc.photometric << endl;
             break;
         case tag_type::StripOffsets:
-            strip_offsets_count = count;
-            strip_offsets_offset = read_value(type, bs);
-            cout << "stip offsets count " << strip_offsets_count << endl;
-            cout << "strip_offsets      " << strip_offsets_offset << endl;
+            rc.strip_offsets_count = count;
+            rc.strip_offsets_offset = read_value(type, bs);
+            cout << "stip offsets count " << rc.strip_offsets_count << endl;
+            cout << "strip_offsets      " << rc.strip_offsets_offset << endl;
             break;
         case tag_type::RowsPerStrip:
             cout << __FILE__ << " " << __LINE__ << " " << count << endl;
             value_offset = bs.readU32();
             break;
         case tag_type::StripByteCounts:
-            strip_bytes_count_count = count;
-            strip_bytes_count_offset = read_value(type, bs);
-            cout << __FILE__ << " " << __LINE__ << " " << strip_bytes_count_count << endl;
-            cout << __FILE__ << " " << __LINE__ << " " << strip_bytes_count_offset << endl;
+            rc.strip_bytes_count_count = count;
+            rc.strip_bytes_count_offset = read_value(type, bs);
+            cout << __FILE__ << " " << __LINE__ << " " << rc.strip_bytes_count_count << endl;
+            cout << __FILE__ << " " << __LINE__ << " " << rc.strip_bytes_count_offset << endl;
             break;
         case tag_type::XResolution:
             value_offset = bs.readU32();
@@ -148,16 +141,16 @@ size_t directory_entry::read(bstream_base& bs)
             value_offset = bs.readU32();
             break;
         case tag_type::SamplesPerPixel:
-            channels = read_value(type, bs);
-            cout << "channels " << channels << endl;
+            rc.channels = read_value(type, bs);
+            cout << "channels " << rc.channels << endl;
             break;
         case tag_type::PlanarConfiguration:
-            planar_configuration = read_value(type, bs);
-            cout << __FILE__ << " " << __LINE__ << " " << planar_configuration << endl;
+            rc.planar_configuration = read_value(type, bs);
+            cout << __FILE__ << " " << __LINE__ << " " << rc.planar_configuration << endl;
             break;
         case tag_type::BitsPerSample:
-            bits_per_sample_offset = read_value(type, bs);
-            cout << "bits per sample offset " << hex << bits_per_sample_offset << dec << endl;
+            rc.bits_per_sample_offset = read_value(type, bs);
+            cout << "bits per sample offset " << hex << rc.bits_per_sample_offset << dec << endl;
             break;
         case tag_type::SampleFormat:
             cout << __FILE__ << " " << __LINE__ << " " << count << endl;
@@ -174,22 +167,22 @@ size_t directory_entry::read(bstream_base& bs)
 //        cout << "offset " << value_offset << endl;
 //        cout << endl;
     }
-    uint32_t next_offset = bs.readU32();
+    rc.next_offset = bs.readU32();
 
-    bs.seek(bits_per_sample_offset);
-    for(int i=0; i<channels; i++)
+    bs.seek(rc.bits_per_sample_offset);
+    for(int i=0; i<rc.channels; i++)
     {
-        bits_per_sample.push_back(bs.readU16());
-        cout << "sample " << i << " depth " << bits_per_sample.back() << endl;
+        rc.bits_per_sample.push_back(bs.readU16());
+        cout << "sample " << i << " depth " << rc.bits_per_sample.back() << endl;
     }
 
-    cout << "next offset " << next_offset << endl;
-    cout << "image_width    " << image_width << endl;
-    cout << "image_length   " << image_length << endl;
-    cout << "compression    " << compression << endl;
-    cout << "photometric    " << photometric << endl;
+    cout << "next offset " <<    rc.next_offset << endl;
+    cout << "image_width    " << rc.image_width << endl;
+    cout << "image_length   " << rc.image_length << endl;
+    cout << "compression    " << rc.compression << endl;
+    cout << "photometric    " << rc.photometric << endl;
 
-    return next_offset;
+    return rc;
 }
 
 reader::reader(const char* data, size_t size) :
@@ -201,11 +194,11 @@ reader::reader(const char* data, size_t size) :
     cout << __FILE__ << " " << __LINE__ << " " << header.file_id    << endl;
     cout << __FILE__ << " " << __LINE__ << " " << header.ifd_offset << endl;
     bstream.seek(header.ifd_offset);
-    directory_entry entry{bstream};
     size_t next;
     do
     {
-      next = entry.read(bstream);
+      directory_entry dir = directory_entry::read(bstream);
+      next = dir.next_offset;
       bstream.seek(next);
     } while(next != 0);
 }

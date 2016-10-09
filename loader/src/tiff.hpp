@@ -162,16 +162,24 @@ public:
 class nervana::tiff::directory_entry
 {
 public:
-    directory_entry(bstream_base& bs);
-    size_t read(bstream_base& bs);
+    static directory_entry read(bstream_base& bs);
 
-    tag_type    tag;
-    data_type   type;
-    uint32_t    count;
-    uint32_t    value_offset;
-
+    size_t          image_width;
+    size_t          image_length;
+    compression_t   compression;
+    photometric_t   photometric;
+    size_t          strip_offsets_count = 0;
+    size_t          strip_offsets_offset;
+    size_t          strip_bytes_count_count = 0;
+    size_t          strip_bytes_count_offset;
+    int             planar_configuration = 0;
+    int             channels = 0;
+    size_t          bits_per_sample_offset = 0;
+    std::vector<int>bits_per_sample;
+    uint32_t        next_offset;
 private:
-    size_t read_value(tiff::data_type type, bstream_base& bs);
+    directory_entry();
+    static size_t read_value(tiff::data_type type, bstream_base& bs);
 };
 
 class nervana::tiff::reader
