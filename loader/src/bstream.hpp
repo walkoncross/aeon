@@ -49,7 +49,7 @@ public:
     virtual double   readF64() = 0;
 
     virtual void     seek(size_t offset) = 0;
-    virtual uint8_t* read(uint8_t* target, size_t count) = 0;
+    virtual uint8_t* read(uint8_t* target, size_t count, size_t channels) = 0;
 protected:
     endian_t endian = endian_t::LITTLE;
 };
@@ -74,7 +74,7 @@ public:
     double   readF64() override;
 
     void     seek(size_t offset) override;
-    uint8_t* read(uint8_t* target, size_t count) override;
+    uint8_t* read(uint8_t* target, size_t count, size_t channels) override;
 
 private:
     bstream_mem() = delete;

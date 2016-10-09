@@ -229,7 +229,7 @@ cv::Mat directory_entry::read_image(bstream_base& bs) const
     for(int i=0; i<strip_offsets.size(); i++)
     {
         bs.seek(strip_offsets[i]);
-        data = bs.read(data, strip_byte_counts[i]);
+        data = bs.read(data, strip_byte_counts[i], channels);
     }
 
     return rc;

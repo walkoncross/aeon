@@ -164,11 +164,16 @@ void     bstream_mem::seek(size_t _offset)
     offset = _offset;
 }
 
-uint8_t* bstream_mem::read(uint8_t* target, size_t count)
+uint8_t* bstream_mem::read(uint8_t* target, size_t count, size_t channels)
 {
-    for(int i=0; i<count; i++)
+    for(int i=0; i<count; i+=channels)
     {
-        *target++ = get_next_byte();
+        // channels are stored as RGB but opencv needs BGR
+        for(int i=0; i<channels; i++)
+        {
+            target[channels-i-1] = readU8();
+        }
+        target += channels;
     }
     return target;
 }
