@@ -15,6 +15,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <exception>
 
 #include "tiff.hpp"
 #include "util.hpp"
@@ -118,8 +119,6 @@ directory_entry directory_entry::read(bstream_base& bs)
         case tag_type::StripOffsets:
             rc.strip_offsets_count = count;
             rc.strip_offsets_offset = read_value(type, bs);
-            cout << "stip offsets count " << rc.strip_offsets_count << endl;
-            cout << "strip_offsets      " << rc.strip_offsets_offset << endl;
             break;
         case tag_type::RowsPerStrip:
             cout << __FILE__ << " " << __LINE__ << " " << count << endl;
@@ -128,8 +127,6 @@ directory_entry directory_entry::read(bstream_base& bs)
         case tag_type::StripByteCounts:
             rc.strip_bytes_count_count = count;
             rc.strip_bytes_count_offset = read_value(type, bs);
-            cout << __FILE__ << " " << __LINE__ << " " << rc.strip_bytes_count_count << endl;
-            cout << __FILE__ << " " << __LINE__ << " " << rc.strip_bytes_count_offset << endl;
             break;
         case tag_type::XResolution:
             value_offset = bs.readU32();
@@ -142,7 +139,6 @@ directory_entry directory_entry::read(bstream_base& bs)
             break;
         case tag_type::SamplesPerPixel:
             rc.channels = read_value(type, bs);
-            cout << "channels " << rc.channels << endl;
             break;
         case tag_type::PlanarConfiguration:
             rc.planar_configuration = read_value(type, bs);
@@ -150,7 +146,6 @@ directory_entry directory_entry::read(bstream_base& bs)
             break;
         case tag_type::BitsPerSample:
             rc.bits_per_sample_offset = read_value(type, bs);
-            cout << "bits per sample offset " << hex << rc.bits_per_sample_offset << dec << endl;
             break;
         case tag_type::SampleFormat:
             cout << __FILE__ << " " << __LINE__ << " " << count << endl;
@@ -160,12 +155,6 @@ directory_entry directory_entry::read(bstream_base& bs)
             value_offset = bs.readU32();
             cout << "unknow tag " << (tag_type)tag << endl;
         }
-
-//        cout << "tag    " << tag          << endl;
-//        cout << "type   " << type         << endl;
-//        cout << "count  " << count        << endl;
-//        cout << "offset " << value_offset << endl;
-//        cout << endl;
     }
     rc.next_offset = bs.readU32();
 
@@ -176,11 +165,25 @@ directory_entry directory_entry::read(bstream_base& bs)
         cout << "sample " << i << " depth " << rc.bits_per_sample.back() << endl;
     }
 
-    cout << "next offset " <<    rc.next_offset << endl;
-    cout << "image_width    " << rc.image_width << endl;
-    cout << "image_length   " << rc.image_length << endl;
-    cout << "compression    " << rc.compression << endl;
-    cout << "photometric    " << rc.photometric << endl;
+    bs.seek(rc.strip_offsets_offset);
+    for(int i=0; i<rc.strip_offsets_count; i++)
+    {
+        rc.strip_offsets.push_back(bs.readU32());
+//        cout << "strip " << i << " offset " << rc.strip_offsets.back() << endl;
+    }
+
+    bs.seek(rc.strip_bytes_count_offset);
+    for(int i=0; i<rc.strip_bytes_count_count; i++)
+    {
+        rc.strip_byte_counts.push_back(bs.readU32());
+//        cout << "strip " << i << " byte count " << rc.strip_byte_counts.back() << endl;
+    }
+
+//    cout << "next offset " <<    rc.next_offset << endl;
+//    cout << "image_width    " << rc.image_width << endl;
+//    cout << "image_length   " << rc.image_length << endl;
+//    cout << "compression    " << rc.compression << endl;
+//    cout << "photometric    " << rc.photometric << endl;
 
     return rc;
 }
@@ -189,18 +192,47 @@ reader::reader(const char* data, size_t size) :
     bstream{data, size},
     header{bstream}
 {
-    dump(cout, data, 256);
-    cout << __FILE__ << " " << __LINE__ << " " << hex << header.byte_order << dec << endl;
-    cout << __FILE__ << " " << __LINE__ << " " << header.file_id    << endl;
-    cout << __FILE__ << " " << __LINE__ << " " << header.ifd_offset << endl;
+//    dump(cout, data, 256);
+//    cout << __FILE__ << " " << __LINE__ << " " << hex << header.byte_order << dec << endl;
+//    cout << __FILE__ << " " << __LINE__ << " " << header.file_id    << endl;
+//    cout << __FILE__ << " " << __LINE__ << " " << header.ifd_offset << endl;
     bstream.seek(header.ifd_offset);
     size_t next;
     do
     {
       directory_entry dir = directory_entry::read(bstream);
+      cv::Mat img = dir.read_image(bstream);
+      cv::imwrite("output_tiff.png", img);
       next = dir.next_offset;
       bstream.seek(next);
     } while(next != 0);
+}
+
+cv::Mat directory_entry::read_image(bstream_base& bs) const
+{
+    int type;
+    switch(bits_per_sample[0])
+    {
+    case 8:
+        type = CV_8UC(channels);
+        break;
+    case 16:
+        type = CV_16UC(channels);
+        break;
+    default:
+        throw std::invalid_argument("bits per sample must be 8 or 16");
+    }
+
+    cv::Mat rc{(int)image_length, (int)image_width, type};
+
+    uint8_t* data = rc.data;
+    for(int i=0; i<strip_offsets.size(); i++)
+    {
+        bs.seek(strip_offsets[i]);
+        data = bs.read(data, strip_byte_counts[i]);
+    }
+
+    return rc;
 }
 
 ostream& nervana::tiff::operator<<(ostream& out, tag_type tag)

@@ -1281,7 +1281,6 @@ TEST(tiff,read_3band)
     string f1 = data_base + "3band/3band_013022232200_Public_img6993.tif";
     cout << f1 << endl;
     auto f1_data = read_file_contents(f1);
-    cout << "file size " << f1_data.size() << endl;
 
     tiff::reader reader{f1_data.data(), f1_data.size()};
 }
@@ -1292,7 +1291,6 @@ TEST(tiff,read_8band)
     string f1 = data_base + "8band/8band_013022232200_Public_img6993.tif";
     cout << f1 << endl;
     auto f1_data = read_file_contents(f1);
-    cout << "file size " << f1_data.size() << endl;
 
     tiff::reader reader{f1_data.data(), f1_data.size()};
 }
@@ -1303,7 +1301,6 @@ TEST(tiff,read_compressed)
     string f1 = data_base + "opencv_tiff/3band_013022232200_Public_img6993.tif";
     cout << f1 << endl;
     auto f1_data = read_file_contents(f1);
-    cout << "file size " << f1_data.size() << endl;
 
     tiff::reader reader{f1_data.data(), f1_data.size()};
 }

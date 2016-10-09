@@ -164,6 +164,15 @@ void     bstream_mem::seek(size_t _offset)
     offset = _offset;
 }
 
+uint8_t* bstream_mem::read(uint8_t* target, size_t count)
+{
+    for(int i=0; i<count; i++)
+    {
+        *target++ = get_next_byte();
+    }
+    return target;
+}
+
 uint8_t bstream_mem::get_next_byte()
 {
     if(offset >= data_size)

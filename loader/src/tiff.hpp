@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 #include "bstream.hpp"
 
 namespace nervana
@@ -163,20 +167,23 @@ class nervana::tiff::directory_entry
 {
 public:
     static directory_entry read(bstream_base& bs);
+    cv::Mat read_image(bstream_base& bs) const;
 
-    size_t          image_width;
-    size_t          image_length;
-    compression_t   compression;
-    photometric_t   photometric;
-    size_t          strip_offsets_count = 0;
-    size_t          strip_offsets_offset;
-    size_t          strip_bytes_count_count = 0;
-    size_t          strip_bytes_count_offset;
-    int             planar_configuration = 0;
-    int             channels = 0;
-    size_t          bits_per_sample_offset = 0;
-    std::vector<int>bits_per_sample;
-    uint32_t        next_offset;
+    size_t              image_width;
+    size_t              image_length;
+    compression_t       compression;
+    photometric_t       photometric;
+    size_t              strip_offsets_count = 0;
+    size_t              strip_offsets_offset;
+    size_t              strip_bytes_count_count = 0;
+    size_t              strip_bytes_count_offset;
+    int                 planar_configuration = 0;
+    int                 channels = 0;
+    size_t              bits_per_sample_offset = 0;
+    std::vector<int>    bits_per_sample;
+    uint32_t            next_offset;
+    std::vector<size_t> strip_offsets;
+    std::vector<size_t> strip_byte_counts;
 private:
     directory_entry();
     static size_t read_value(tiff::data_type type, bstream_base& bs);
