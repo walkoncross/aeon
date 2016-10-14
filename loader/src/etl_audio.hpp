@@ -100,7 +100,12 @@ namespace nervana {
         std::string feature_type     {"specgram"};
         /** Window type for spectrogram generation */
         std::string window_type      {"hann"};
+        /** Add delta features */
+        bool        use_delta        {false};
+        /** Add delta-delta features */
+        bool        use_delta_delta  {false};
 
+        /** File listing noise audio files */
         std::string noise_index_file {};
 
         /** Sample rate of input audio in hertz */
@@ -155,7 +160,14 @@ namespace nervana {
             } else {
                 throw std::runtime_error("Unknown feature type " + feature_type);
             }
-
+            if (use_delta && (feature_type == "mfsc" || feature_type == "mfcc")) {
+                if (use_delta_delta) {
+                    freq_steps *= 3;
+                }
+                else {
+                    freq_steps *= 2;
+                }
+            }
             if (feature_type == "samples") {
                 if (output_type != "int16_t" && output_type != "float") {
                     throw std::runtime_error("Invalid pload type for audio " + output_type);
@@ -189,6 +201,13 @@ namespace nervana {
             if(noise_offset_fraction.param().b() > 1.0f) {
                 throw std::invalid_argument("noise_offset_fraction.param().b() > 1.0f");
             }
+            if(num_cepstra > num_filters) {
+                // NOTE: It might be better to just set num_cepstra to min(num_cepstra, num_filters)
+                throw std::invalid_argument("num_cepstra must be <= num_filters");
+            }
+            if(use_delta_delta && !use_delta) {
+                throw std::invalid_argument("use_delta_delta cannot be true if use_delta is false.");
+            }
         }
     private:
         config(){}
@@ -202,6 +221,8 @@ namespace nervana {
             ADD_SCALAR(output_type, mode::OPTIONAL, [](const std::string& v){ return output_type::is_valid_type(v); }),
             ADD_SCALAR(feature_type, mode::OPTIONAL),
             ADD_SCALAR(window_type, mode::OPTIONAL),
+            ADD_SCALAR(use_delta, mode::OPTIONAL),
+            ADD_SCALAR(use_delta_delta, mode::OPTIONAL),
             ADD_SCALAR(noise_index_file, mode::OPTIONAL),
             ADD_SCALAR(add_noise_probability, mode::OPTIONAL),
             ADD_SCALAR(sample_freq_hz, mode::OPTIONAL),
