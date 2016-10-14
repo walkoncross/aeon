@@ -147,6 +147,53 @@ void specgram::cepsgram_to_mfcc(const Mat& cepsgram,
     return;
 }
 
+/** Add deltas and delta-deltas */
+void specgram::add_deltas(const Mat& tf_mat,
+                          const int window_size,
+                          const bool delta_delta,
+                          Mat& delta_mat)
+{
+    int fbands = tf_mat.cols;
+    int time_pts = tf_mat.rows;
+
+    int norm_factor = 0;
+    for (n = 1; n <= window_size; ++n) {
+        norm_factor += 2 * n * n;
+    }
+
+    // Allocate padded delta_mat
+    int nbands = 3 * fbands ? delta_delta : 2 * fbands;
+    delta_mat.create(time_pts, nbands, CV32F);
+    delta_mat(Range::all(), Range(0, fbands)) = tf_mat;
+
+    // Add delta features
+    // d_t,f = \sum_w=1^W w * (c_t+w,f - c_t-w,f) / (2 * \sum_w=1^w w^2)
+    int l, r;
+    for (int t = 0; t < time_pts; ++t) {
+        for (int j = 0; j < fbands; ++j) {
+            for (int w = 1; w <= window_size; ++w) {
+                l = std::max(t - w, 0);
+                r = std::min(t + w, time_pts);
+                delta_mat.at<float>(t, j + fbands) += w * (tf_mat.at(r, j) - tf_mat.at(l, j));
+            }
+            delta_mat.at<float>(t, j + fbands) /= norm_factor;
+        }
+    }
+    // Add delta-delta features
+    if (delta_delta) {
+        for (int t = 0; t < time_pts; ++t) {
+            for (int j = fbands; j < 2 * fbands; ++j) {
+                for (int w = 1; w <= window_size; ++w) {
+                    l = std::max(t - w, 0);
+                    r = std::min(t + w, time_pts);
+                    delta_mat.at<float>(t, j + fbands) += w * (delta_mat.at(r, j) - delta_mat.at(l, j));
+                }
+                delta_mat.at<float>(t, j + fbands) /= norm_factor;
+            }
+        }
+    }
+}
+
 
 void specgram::create_window(const std::string& window_type, const int n, Mat& win)
 {

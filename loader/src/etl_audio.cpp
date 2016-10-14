@@ -104,7 +104,17 @@ std::shared_ptr<audio::decoded> audio::transformer::transform(
         cv::resize(decoded->get_freq_data(), resized, cv::Size(), 1.0, params->time_scale_fraction,
                    (params->time_scale_fraction > 1.0) ? CV_INTER_CUBIC : CV_INTER_AREA);
         decoded->get_freq_data() = resized;
-        decoded->valid_frames = std::min((uint32_t) resized.rows, (uint32_t) _cfg.time_steps);
+
+        // Add delta and delta-delta features
+        if (_cfg.use_delta) {
+            cv::Mat delta_mat;
+            specgram::add_deltas(resized, 2,
+                                 _cfg.use_delta_delta,
+                                 delta_mat);
+            decoded->get_freq_data() = delta_mat;
+        }
+
+        decoded->valid_frames = std::min((uint32_t) decoded->get_freq_data().rows, (uint32_t) _cfg.time_steps);
     }
 
     return decoded;

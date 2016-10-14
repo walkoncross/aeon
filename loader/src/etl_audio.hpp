@@ -161,19 +161,14 @@ namespace nervana {
                 throw std::runtime_error("Unknown feature type " + feature_type);
             }
             if (use_delta && (feature_type == "mfsc" || feature_type == "mfcc")) {
-                if (use_delta_delta) {
-                    freq_steps *= 3;
-                }
-                else {
-                    freq_steps *= 2;
-                }
+                freq_steps = 3 * freq_steps ? use_delta_delta : 2 * freq_steps;
             }
             if (feature_type == "samples") {
                 if (output_type != "int16_t" && output_type != "float") {
                     throw std::runtime_error("Invalid pload type for audio " + output_type);
                 }
             } else {
-                if (output_type != "uint8_t") {
+                if (output_type != "uint8_t" && output_type != "float") {
                     throw std::runtime_error("Invalid dload type for audio " + output_type);
                 }
             }
