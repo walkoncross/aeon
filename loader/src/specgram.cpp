@@ -157,13 +157,13 @@ void specgram::add_deltas(const Mat& tf_mat,
     int time_pts = tf_mat.rows;
 
     int norm_factor = 0;
-    for (n = 1; n <= window_size; ++n) {
+    for (int n = 1; n <= window_size; ++n) {
         norm_factor += 2 * n * n;
     }
 
     // Allocate padded delta_mat
     int nbands = 3 * fbands ? delta_delta : 2 * fbands;
-    delta_mat.create(time_pts, nbands, CV32F);
+    delta_mat.create(time_pts, nbands, CV_32F);
     delta_mat(Range::all(), Range(0, fbands)) = tf_mat;
 
     // Add delta features
@@ -174,7 +174,7 @@ void specgram::add_deltas(const Mat& tf_mat,
             for (int w = 1; w <= window_size; ++w) {
                 l = std::max(t - w, 0);
                 r = std::min(t + w, time_pts);
-                delta_mat.at<float>(t, j + fbands) += w * (tf_mat.at(r, j) - tf_mat.at(l, j));
+                delta_mat.at<float>(t, j + fbands) += w * (tf_mat.at<float>(r, j) - tf_mat.at<float>(l, j));
             }
             delta_mat.at<float>(t, j + fbands) /= norm_factor;
         }
@@ -186,7 +186,7 @@ void specgram::add_deltas(const Mat& tf_mat,
                 for (int w = 1; w <= window_size; ++w) {
                     l = std::max(t - w, 0);
                     r = std::min(t + w, time_pts);
-                    delta_mat.at<float>(t, j + fbands) += w * (delta_mat.at(r, j) - delta_mat.at(l, j));
+                    delta_mat.at<float>(t, j + fbands) += w * (delta_mat.at<float>(r, j) - delta_mat.at<float>(l, j));
                 }
                 delta_mat.at<float>(t, j + fbands) /= norm_factor;
             }
