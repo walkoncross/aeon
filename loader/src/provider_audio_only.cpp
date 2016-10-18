@@ -26,6 +26,7 @@ audio_only::audio_only(nlohmann::json js) :
     audio_factory(audio_config)
 {
     num_inputs = 1;
+    cout << "freq_steps is " << audio_config.freq_steps << endl;
     oshapes.push_back(audio_config.get_shape_type());
 }
 

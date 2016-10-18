@@ -149,6 +149,7 @@ namespace nervana {
 
             time_steps = ((max_duration_tn - frame_length_tn) / frame_stride_tn) + 1;
 
+            // std::cout << "Setting freq_steps" << std::endl;
             if (feature_type == "specgram") {
                 freq_steps = frame_length_tn / 2  + 1;
             } else if (feature_type == "mfsc") {
@@ -160,8 +161,11 @@ namespace nervana {
             } else {
                 throw std::runtime_error("Unknown feature type " + feature_type);
             }
+            // std::cout << "freq_steps starting at " << freq_steps << std::endl;
             if (use_delta && (feature_type == "mfsc" || feature_type == "mfcc")) {
-                freq_steps = 3 * freq_steps ? use_delta_delta : 2 * freq_steps;
+                // std::cout << "use_delta is true" << std::endl;
+                freq_steps = use_delta_delta ? 3 * freq_steps : 2 * freq_steps;
+                // std::cout << "freq_steps is now " << freq_steps << std::endl;
             }
             if (feature_type == "samples") {
                 if (output_type != "int16_t" && output_type != "float") {

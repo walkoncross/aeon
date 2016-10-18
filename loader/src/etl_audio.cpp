@@ -34,6 +34,7 @@ shared_ptr<audio::params> audio::param_factory::make_params(std::shared_ptr<cons
 /** \brief Extract audio data from a wav file using sox */
 std::shared_ptr<audio::decoded> audio::extractor::extract(const char* item, int itemSize)
 {
+    // std::cout << "Extracting " << item << std::endl;
     return make_shared<audio::decoded>(nervana::read_audio_from_mem(item, itemSize));
 }
 
@@ -98,23 +99,29 @@ std::shared_ptr<audio::decoded> audio::transformer::transform(
                 decoded->get_freq_data() = tmpmat;
             }
         }
-
+        // std::cout << "First element is " << decoded->get_freq_data().at<float>(0, 0) << std::endl;
         // place into a destination with the appropriate time dimensions
         cv::Mat resized;
         cv::resize(decoded->get_freq_data(), resized, cv::Size(), 1.0, params->time_scale_fraction,
                    (params->time_scale_fraction > 1.0) ? CV_INTER_CUBIC : CV_INTER_AREA);
         decoded->get_freq_data() = resized;
+        // std::cout << "First element is " << decoded->get_freq_data().at<float>(0, 0) << std::endl;
 
         // Add delta and delta-delta features
+        // std::cout << "Getting delta features" << std::endl;
         if (_cfg.use_delta) {
             cv::Mat delta_mat;
-            specgram::add_deltas(resized, 2,
+            specgram::add_deltas(resized, 1,
                                  _cfg.use_delta_delta,
                                  delta_mat);
+            // std::cout << "delta_mat has shape (" << delta_mat.rows << "," << delta_mat.cols << ")" << std::endl;
             decoded->get_freq_data() = delta_mat;
         }
 
+        // std::cout << "First element is " << decoded->get_freq_data().at<float>(0, 0) << std::endl;
+        // std::cout << "decoded has shape (" << decoded->get_freq_data().rows << "," << decoded->get_freq_data().cols << ")" << std::endl;
         decoded->valid_frames = std::min((uint32_t) decoded->get_freq_data().rows, (uint32_t) _cfg.time_steps);
+        // std::cout << "valid frames is " << decoded->valid_frames << std::endl;
     }
 
     return decoded;
@@ -126,20 +133,48 @@ void audio::loader::load(const vector<void*>& outbuf, shared_ptr<audio::decoded>
     auto frames = input->get_freq_data();
     int cv_type = _cfg.get_shape_type().get_otype().cv_type;
 
+    // std::cout << "Normalizing" << endl;
     if (_cfg.feature_type != "samples") {
-        cv::normalize(frames, frames, 0, 255, CV_MINMAX);
+        if (_cfg.use_delta) {
+            int fbands = _cfg.use_delta_delta ? _cfg.freq_steps / 3 : _cfg.freq_steps / 2;
+            // cout << "Normalizing first " << fbands << " bands from 0 to 255" << endl;
+            // cv::normalize(frames(cv::Range(0, nframes),
+            //                      cv::Range(0, fbands)),
+            //               frames(cv::Range(0, nframes),
+            //                      cv::Range(0, fbands)),
+            //               0, 255, CV_MINMAX);
+            // // cout << "Normalizing last bands from -255 to 255" << endl;
+            // cv::normalize(frames(cv::Range(0, nframes),
+            //                      cv::Range(fbands, _cfg.freq_steps)),
+            //               frames(cv::Range(0, nframes),
+            //                      cv::Range(fbands, _cfg.freq_steps)),
+            //               -255, 255, CV_MINMAX);
+        }
+        else {
+            // cv::normalize(frames(cv::Range(0, nframes),
+            //                      cv::Range::all()),
+            //               frames(cv::Range(0, nframes),
+            //                      cv::Range::all()),
+            //               0, 255, CV_MINMAX);
+            cv::normalize(frames, frames, 0, 255, CV_MINMAX);
+        }
     }
 
+    // std::cout << "Creating padded" << endl;
     cv::Mat padded_frames(_cfg.time_steps, _cfg.freq_steps, cv_type);
-
+    // std::cout << "padded has shape (" << _cfg.time_steps << "," << _cfg.freq_steps << ")" << endl;
+    // std::cout << "Filling padded" << endl;
     frames(cv::Range(0, nframes), cv::Range::all()).convertTo(
         padded_frames(cv::Range(0, nframes), cv::Range::all()), cv_type);
 
     if (nframes < _cfg.time_steps) {
+        // std::cout << "Padding" << endl;
         padded_frames(cv::Range(nframes, _cfg.time_steps), cv::Range::all()) = cv::Scalar::all(0);
     }
-
+    // std::cout << "First element is " << padded_frames.at<float>(0, 0) << std::endl;
+    // std::cout << "Moving to dst" << endl;
     cv::Mat dst(_cfg.freq_steps, _cfg.time_steps, cv_type, (void *) outbuf[0]);
     cv::transpose(padded_frames, dst);
     cv::flip(dst, dst, 0);
+    // std::cout << "First element is " << dst.at<float>(0, 0) << std::endl;
 }
