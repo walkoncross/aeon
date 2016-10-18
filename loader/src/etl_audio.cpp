@@ -98,13 +98,22 @@ std::shared_ptr<audio::decoded> audio::transformer::transform(
                 decoded->get_freq_data() = tmpmat;
             }
         }
-
         // place into a destination with the appropriate time dimensions
         cv::Mat resized;
         cv::resize(decoded->get_freq_data(), resized, cv::Size(), 1.0, params->time_scale_fraction,
                    (params->time_scale_fraction > 1.0) ? CV_INTER_CUBIC : CV_INTER_AREA);
         decoded->get_freq_data() = resized;
-        decoded->valid_frames = std::min((uint32_t) resized.rows, (uint32_t) _cfg.time_steps);
+
+        // Add delta and delta-delta features
+        if (_cfg.use_delta) {
+            cv::Mat delta_mat;
+            specgram::add_deltas(resized, 1,
+                                 _cfg.use_delta_delta,
+                                 delta_mat);
+            decoded->get_freq_data() = delta_mat;
+        }
+
+        decoded->valid_frames = std::min((uint32_t) decoded->get_freq_data().rows, (uint32_t) _cfg.time_steps);
     }
 
     return decoded;
@@ -117,18 +126,37 @@ void audio::loader::load(const vector<void*>& outbuf, shared_ptr<audio::decoded>
     int cv_type = _cfg.get_shape_type().get_otype().cv_type;
 
     if (_cfg.feature_type != "samples") {
-        cv::normalize(frames, frames, 0, 255, CV_MINMAX);
+        if (_cfg.use_delta) {
+            int fbands = _cfg.use_delta_delta ? _cfg.freq_steps / 3 : _cfg.freq_steps / 2;
+            // Normalize standard TF features to 0-255
+            cv::normalize(frames(cv::Range(0, nframes),
+                                 cv::Range(0, fbands)),
+                          frames(cv::Range(0, nframes),
+                                 cv::Range(0, fbands)),
+                          0, 255, CV_MINMAX);
+            // Normalize delta features to -255 - 255
+            cv::normalize(frames(cv::Range(0, nframes),
+                                 cv::Range(fbands, _cfg.freq_steps)),
+                          frames(cv::Range(0, nframes),
+                                 cv::Range(fbands, _cfg.freq_steps)),
+                          -255, 255, CV_MINMAX);
+        }
+        else {
+            cv::normalize(frames(cv::Range(0, nframes),
+                                 cv::Range::all()),
+                          frames(cv::Range(0, nframes),
+                                 cv::Range::all()),
+                          0, 255, CV_MINMAX);
+        }
     }
 
     cv::Mat padded_frames(_cfg.time_steps, _cfg.freq_steps, cv_type);
-
     frames(cv::Range(0, nframes), cv::Range::all()).convertTo(
         padded_frames(cv::Range(0, nframes), cv::Range::all()), cv_type);
 
     if (nframes < _cfg.time_steps) {
         padded_frames(cv::Range(nframes, _cfg.time_steps), cv::Range::all()) = cv::Scalar::all(0);
     }
-
     cv::Mat dst(_cfg.freq_steps, _cfg.time_steps, cv_type, (void *) outbuf[0]);
     cv::transpose(padded_frames, dst);
     cv::flip(dst, dst, 0);

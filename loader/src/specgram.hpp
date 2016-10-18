@@ -49,6 +49,11 @@ public:
                                  const int num_cepstra,
                                  cv::Mat& mfcc);
 
+    static void add_deltas(const cv::Mat& tf_mat,
+                           const int window_size,
+                           const bool delta_delta,
+                           cv::Mat& delta_mat);
+
     static void create_window(const std::string& window_type,
                               const int n,
                               cv::Mat& win);
