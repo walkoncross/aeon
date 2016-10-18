@@ -284,3 +284,48 @@ TEST(etl, sox_use) {
     }
 
 }
+
+
+TEST(audio, filterbank) {
+
+    int sample_rate = 2000;
+    int fftsz = 20;
+    int num_filters = 1;
+
+    // Computed using python
+    float expected[11] = {0., 0.25, 0.5, 0.75, 1., 5. / 6, 2. / 3, 0.5, 1. / 3, 1. / 6, 0.};
+
+    cv::Mat fbank;
+    specgram::create_filterbanks(num_filters, fftsz, sample_rate, fbank);
+    ASSERT_EQ(11, fbank.rows);
+    ASSERT_EQ(1, fbank.cols);
+
+    for (int ii = 0; ii < 11; ++ii) {
+        ASSERT_NEAR(expected[ii], fbank.at<float>(ii, 0), 1e-6);
+    }
+
+}
+
+TEST(audio, deltas) {
+
+    cv::Mat tf_mat;
+    tf_mat = cv::Mat::zeros(5, 3, CV_32F);
+    tf_mat.at<float>(3, 0) = 0.5;
+    tf_mat.at<float>(2, 1) = 1;
+    tf_mat.at<float>(4, 1) = -1;
+
+    // In output, first 3 columns are tf_mat, second 3 are deltas, third 3 are delta-deltas
+    cv::Mat output;
+    specgram::add_deltas(tf_mat, 1, true, output);
+
+    // Check a few deltas
+    ASSERT_EQ(0.25, output.at<float>(2, 3)); //.5 * (tf_mat[3, 0] - tf_mat[1, 0])
+    ASSERT_EQ(0.5, output.at<float>(1, 4));
+    ASSERT_EQ(-1., output.at<float>(3, 4));
+
+    // Check a few delta-deltas
+    ASSERT_EQ(0., output.at<float>(2, 6)); // .5 * (output[3, 3] - output[1, 3])
+    ASSERT_EQ(0., output.at<float>(1, 7));
+    ASSERT_EQ(-0.25, output.at<float>(3, 7));
+
+}

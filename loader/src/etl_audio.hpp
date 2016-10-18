@@ -149,7 +149,6 @@ namespace nervana {
 
             time_steps = ((max_duration_tn - frame_length_tn) / frame_stride_tn) + 1;
 
-            // std::cout << "Setting freq_steps" << std::endl;
             if (feature_type == "specgram") {
                 freq_steps = frame_length_tn / 2  + 1;
             } else if (feature_type == "mfsc") {
@@ -161,12 +160,14 @@ namespace nervana {
             } else {
                 throw std::runtime_error("Unknown feature type " + feature_type);
             }
-            // std::cout << "freq_steps starting at " << freq_steps << std::endl;
-            if (use_delta && (feature_type == "mfsc" || feature_type == "mfcc")) {
-                // std::cout << "use_delta is true" << std::endl;
-                freq_steps = use_delta_delta ? 3 * freq_steps : 2 * freq_steps;
-                // std::cout << "freq_steps is now " << freq_steps << std::endl;
+
+            if (use_delta_delta) {
+                use_delta = true;
             }
+            if (use_delta) {
+                freq_steps = use_delta_delta ? 3 * freq_steps : 2 * freq_steps;
+            }
+
             if (feature_type == "samples") {
                 if (output_type != "int16_t" && output_type != "float") {
                     throw std::runtime_error("Invalid pload type for audio " + output_type);
@@ -200,7 +201,7 @@ namespace nervana {
             if(noise_offset_fraction.param().b() > 1.0f) {
                 throw std::invalid_argument("noise_offset_fraction.param().b() > 1.0f");
             }
-            if(num_cepstra > num_filters) {
+            if((feature_type == "mfcc") && (num_cepstra > num_filters)) {
                 // NOTE: It might be better to just set num_cepstra to min(num_cepstra, num_filters)
                 throw std::invalid_argument("num_cepstra must be <= num_filters");
             }

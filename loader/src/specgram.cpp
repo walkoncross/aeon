@@ -104,8 +104,8 @@ void specgram::create_filterbanks(const int num_filters,
     }
 
     int num_freqs = fftsz / 2 + 1;
-    fbank.create(num_freqs, num_filters, CV_32F);
-    fbank(cv::Range::all(), cv::Range::all()) = cv::Scalar::all(0);
+    fbank = cv::Mat::zeros(num_freqs, num_filters, CV_32F);
+
     // Create triangular windows from three neighboring bins
     for (int j = 0; j < num_filters; ++j) {
         bins.push_back(floor(scale_by * mel_to_hz(min_mel_freq + (j + 2) * mel_freq_delta)));
@@ -147,7 +147,10 @@ void specgram::cepsgram_to_mfcc(const Mat& cepsgram,
     return;
 }
 
-/** Add deltas and delta-deltas */
+/** Add deltas and delta-deltas
+* For reference, see:
+* http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/#computing-the-mel-filterbank
+*/
 void specgram::add_deltas(const Mat& tf_mat,
                           const int window_size,
                           const bool delta_delta,
@@ -156,32 +159,19 @@ void specgram::add_deltas(const Mat& tf_mat,
     int fbands = tf_mat.cols;
     int time_pts = tf_mat.rows;
 
-    // cout << "tf_mat has " << fbands << " cols and " << time_pts << " rows" << endl;
-    // cout << "window_size is " << window_size << endl;
-    // cout << "delta_delta is " << delta_delta << endl;
-
     int norm_factor = 0;
     for (int n = 1; n <= window_size; ++n) {
         norm_factor += 2 * n * n;
     }
-    // cout << "norm_factor is " << norm_factor << endl;
 
     // Allocate padded delta_mat
     int nbands = delta_delta ? 3 * fbands : 2 * fbands;
-    // cout << "Attempting to create delta_mat with shape (" << time_pts << "," << nbands << ")" << endl;
     delta_mat.create(time_pts, nbands, CV_32F);
-    // cout << "Attempting to set first columns of delta_mat to tf_mat" << endl;
     tf_mat.copyTo(delta_mat(Range::all(), Range(0, fbands)));
-    // delta_mat(Range::all(), Range(0, fbands)) = tf_mat;
-    // cout << "First element of tf_mat is " << tf_mat.at<float>(0, 0) << endl;
-    // cout << "First element of delta_mat is " << delta_mat.at<float>(0, 0) << endl;
-
-    // cout << "delta_mat has shape of (" << delta_mat.rows << "," << delta_mat.cols << ")" << endl;
 
     // Add delta features
     // d_t,f = \sum_w=1^W w * (c_t+w,f - c_t-w,f) / (2 * \sum_w=1^w w^2)
     int l, r;
-    // cout << "Adding delta features" << endl;
     for (int t = 0; t < time_pts; ++t) {
         for (int j = 0; j < fbands; ++j) {
             delta_mat.at<float>(t, j + fbands) = 0;
@@ -191,15 +181,6 @@ void specgram::add_deltas(const Mat& tf_mat,
                 delta_mat.at<float>(t, j + fbands) += w * (tf_mat.at<float>(r, j) - tf_mat.at<float>(l, j));
             }
             delta_mat.at<float>(t, j + fbands) /= norm_factor;
-            if (t == 0){
-                // cout << "delta_mat[0, " << (j + fbands) << "] = " << delta_mat.at<float>(t, j + fbands) << endl;
-            }
-        }
-        if (t == (time_pts - 1)) {
-            // cout << "t = " << t << ", r = " << r << endl;
-        }
-        else if (t == 0) {
-            // cout << "t = " << t << ", l = " << l << endl;
         }
     }
     // Add delta-delta features
