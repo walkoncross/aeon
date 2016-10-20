@@ -166,10 +166,24 @@ uint32_t nervana::get_global_random_seed()
     return nervana::global_random_seed;
 }
 
+/** \brief Load the raw audio from memory buffer using sox for file conversions.
+*
+* Current limitations include:
+* - Must be single-channel, 16 bit audio
+* - Does not support mp3 files
+* - flac files only work in single-threaded mode. Specify `single_thread=True` in your aeon config.
+*/
 cv::Mat nervana::read_audio_from_mem(const char* item, int itemSize)
 {
     SOX_SAMPLE_LOCALS;
     sox_format_t* in = sox_open_mem_read((void *) item, itemSize, NULL, NULL, NULL);
+
+    if (!in) {
+        if (((std::string) "fLaC").compare((std::string) item) == 0) {
+            throw std::runtime_error("flac file decoding failed! This sometimes fail in during multi-threaded decoding. Consider including the config single_thread=True as a workaround.");
+        }
+        throw std::runtime_error("Failed to decode audio file!");
+    }
     affirm(in->signal.channels == 1, "input audio must be single channel");
     affirm(in->signal.precision == 16, "input audio must be signed short");
 
