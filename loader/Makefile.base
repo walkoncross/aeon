@@ -9,4 +9,4 @@ CFLAGS          := $(CFLAGS) -Wall -O2 -fPIC
 DEPDIR           = .d
 $(shell mkdir -p ${DEPDIR}>/dev/null)
 DEPFLAGS         = -MT $@ -MMD -MP -MF ${DEPDIR}/$*.Td
-POSTCOMPILE      = @mv -f ${DEPDIR}/$*.Td ${DEPDIR}/$*.d
+POSTCOMPILE      = @mv -f ${DEPDIR}/$*.Td ${DEPDIR}/$*.d; touch $*.o
