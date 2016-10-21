@@ -24,11 +24,13 @@ std::shared_ptr<char_map::decoded> char_map::extractor::extract(const char* in_a
     string transcript(in_array, nvalid);
     vector<uint8_t> char_ints((vector<uint8_t>::size_type) _max_length, (uint8_t) 0);
 
+    uint32_t j = 0;
+    uint8_t v;
     for (uint32_t i=0; i<nvalid; i++)
     {
         auto l = _cmap.find(std::toupper(transcript[i]));
-        uint8_t v = (l != _cmap.end()) ? l->second : UINT8_MAX;
-        char_ints[i] = v;
+        if (l == _cmap.end()) continue;
+        char_ints[j++] = l->second;
     }
     auto rc = make_shared<char_map::decoded>(char_ints, nvalid);
     return rc;
