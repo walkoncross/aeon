@@ -206,7 +206,7 @@ class DataLoader(object):
 
         return dtuple
 
-    def unending_iter(self):
+    def __iter__(self):
         """
         never ending iterator over dataset.
         """
@@ -238,7 +238,7 @@ class DataLoader(object):
         """
         return self._nbatches
 
-    def __iter__(self):
+    def batch_iter(self):
         """
         Iterate over a single epoch.
 
