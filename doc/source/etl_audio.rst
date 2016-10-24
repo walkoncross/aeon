@@ -16,7 +16,7 @@
 Audio
 =====
 
-For audio data, Aeon has providers for both classification and transcription tasks. Currently, audio can be stored in any file format handled by the sox_ command line utility (e.g. .wav, .mp3, .aiff), but must first be converted to 16-bit, single channel. This conversion is done by the user before calling the dataloader. For example, to convert ``*.wav`` files to the correct format, one could use:
+For audio data, Aeon has providers for both classification and transcription tasks. Currently, audio can be stored in any file format handled by the sox_ command line utility (e.g. .wav, .flac, .aiff) [#]_, but must first be converted to 16-bit, single channel. This conversion is done by the user before calling the dataloader. For example, to convert ``*.wav`` files to the correct format, one could use:
 
 .. code-block:: bash
 
@@ -88,7 +88,7 @@ You can configure the audio processing pipeline from python using a dictionary l
 
 .. code-block:: python
 
-    audio_config = dict(sampling_freq=16000,
+    audio_config = dict(sample_freq_hz=16000,
                         max_duration="3 seconds",
                         frame_length="256 samples",
                         frame_stride="128 samples",
@@ -164,7 +164,8 @@ Transcription provisioning can be configured using the following parameters:
    :escape: ~
 
    alphabet (string)| *Required* | A string of symbols to be included in the target output
-   max_length (uint_32t) | *Required* | Maximum number of symbols in a target
+   max_length (uint32_t) | *Required* | Maximum number of symbols in a target
+   unknown_value (uint8_t) | 0 | Integer value to give to unknown characters. 0 causes them to be discarded. Value should be between ``len(alphabet)`` and 255.
    pack_for_ctc (bool) | False | Packs the output buffer to be passed to the `warp CTC`_ objective function
    output_type (string) | ~"uint8_t~" | transcript data type
 
@@ -194,3 +195,4 @@ The buffers provisioned to the model are then:
 .. _sox: http://sox.sourceforge.net/
 .. _neon: https://github.com/NervanaSystems/neon
 .. _warp CTC: https://github.com/baidu-research/warp-ctc
+.. [#] Currently there is an issue with multi-threaded decoding of flac files using sox. For these, we recommend setting ``single_thread=True`` in your Aeon configuration.
